@@ -10,7 +10,19 @@ import userRouter from "../src/services/user/user-router.js";
 import eventRouter from "../src/services/event/event-router.js";
 import newsletterRouter from "../src/services/newsletter/newsletter-router.js";
 
+import crypto, { Hmac } from "crypto";
+
 const app: Application = express();
+
+const key: string | undefined = process.env.JWT_KEY;
+interface DecodeRequestModel {
+	token: string,
+	context: object
+}
+
+interface CustomRequest<T> extends Request {
+	body: T
+}
 
 // Utility packages (detailed in the readme)
 app.use(helmet());
@@ -31,6 +43,61 @@ app.use("/event/", eventRouter);
 // Ensure that API is running
 app.get("/", (_: Request, res: Response) => {
 	res.end("API is working!");
+});
+
+
+
+// Encoding function
+app.post("/encode", (req: Request, res: Response) => {
+	// console.log(JSON.stringify(req.body));
+	const headingString: string = btoa(JSON.stringify({
+		"alg": "HS256",
+		"typ": "JWT",
+	}));
+	const payloadString:string = btoa(JSON.stringify(req.body));
+
+	const hasher: Hmac = crypto.createHmac("sha256", key!);
+	const hashedString: string = hasher.update(headingString + "." + payloadString).digest("base64");
+
+	res.send({
+		token: headingString + "." + payloadString + "." + hashedString,
+	});
+});
+
+// Decoding function
+app.post("/decode", (req: CustomRequest<DecodeRequestModel>, res: Response) => {
+
+	try {
+		// console.log(req.body);
+		const token: string = req.body.token;
+		const splitToken: string[] = token.split(".");
+
+		const headingIndex: number = 0, payloadIndex: number = 1, hashIndex: number = 2;
+
+		const headingString: string = splitToken[headingIndex]!;
+		const payloadString: string = splitToken[payloadIndex]!;
+		const hashedInput: string = splitToken[hashIndex]!;
+
+
+		const hasher: Hmac = crypto.createHmac("sha256", key!);
+		const hashedString: string = hasher.update(headingString + "." + payloadString).digest("base64");
+	
+		// console.log(token, splitToken, headingString, payloadString, hashedInput, hashedString);
+
+		if (hashedString === hashedInput) {
+			res.send(JSON.parse(atob(payloadString)));
+		} else {
+			res.send({
+				worked: false,
+			});
+		}
+	} catch (e) {
+		// there could be a ton of things that could go wrong, from token not existing to the string not being formatted correctly
+		console.error(e);
+		res.send({
+			worked: false,
+		});
+	}
 });
 
 // Throw an error if call is made to the wrong API endpoint
