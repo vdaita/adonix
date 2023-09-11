@@ -47,7 +47,18 @@ app.get("/", (_: Request, res: Response) => {
 
 
 
-// Encoding function
+/**
+ * @api {post} /encode
+ * @apiName Encode JWT
+ * @apiGroup
+ * @apiDescription Encode JWT user token.
+ *
+ *
+ * @apiSuccess (200: Success) {String} token JWT token of authenticated user
+ * @apiSuccessExample Example Success Response:
+ *     HTTP/1.1 200 OK
+ *     {"token": "loremipsumdolorsitamet"}
+ */
 app.post("/encode", (req: Request, res: Response) => {
 	// console.log(JSON.stringify(req.body));
 	const headingString: string = btoa(JSON.stringify({
@@ -64,7 +75,18 @@ app.post("/encode", (req: Request, res: Response) => {
 	});
 });
 
-// Decoding function
+/**
+ * @api {post} /decode
+ * @apiName Decode JWT
+ * @apiGroup
+ * @apiDescription Decode JWT user token.
+ *
+ *
+ * @apiSuccess (200: Success) {String} token JWT token of authenticated user
+ * @apiSuccessExample Example Success Response:
+ *     HTTP/1.1 200 OK
+ *     {"user": "loremipsum", "data": {}}
+ */
 app.post("/decode", (req: CustomRequest<DecodeRequestModel>, res: Response) => {
 
 	try {
